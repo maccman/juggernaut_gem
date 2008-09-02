@@ -80,7 +80,7 @@ module Juggernaut
 
      def to_json
        {
-         :client_id => @id, 
+         :client_id  => @id, 
          :session_id => @session_id
        }.to_json
      end

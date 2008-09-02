@@ -69,7 +69,6 @@ module Juggernaut
     # so we need to buffer the data until we find the
     # terminating "\0"
     def receive_data(data)
-      logger.debug "Receiving data: #{data}"
       @buffer << data
       @buffer = process_whole_messages(@buffer)
     end
@@ -162,7 +161,7 @@ module Juggernaut
       # attempt would hook onto a new em instance. A client
       # usually dies through an unbind 
       @connected = false
-      @logout_timeout = Time::now + (options[:timeout] || 30)
+      @logout_timeout = Time::now + (options[:timeout] || 5)
 			@status = "DEAD: %s: Could potentially logout at %s" %
 				[ reason, @logout_timeout ]
     end

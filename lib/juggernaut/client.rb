@@ -1,3 +1,5 @@
+require 'timeout'
+require 'net/http'
 require 'uri'
 module Juggernaut
   class Client
@@ -59,14 +61,17 @@ module Juggernaut
 
        def send_logouts_after_timeout
          @@clients.each do |client|
-           client.logout_request if !client.alive? and client.give_up? and !client.sent_logout?
+           if !client.alive? and client.give_up?
+             client.logout_request
+             @@clients.delete(client)
+           end
          end
        end
 
        # Called when the server is shutting down
        def send_logouts_to_all_clients
          @@clients.each do |client|
-           client.logout_request if !client.sent_logout?
+           client.logout_request
          end
        end
      end
@@ -101,12 +106,7 @@ module Juggernaut
 
      def logout_request
        return true unless options[:logout_url]
-       @sent_logout = true
        post_request(options[:logout_url])
-     end
-
-     def sent_logout?
-       !!@sent_logout
      end
 
      def send_message(msg, channels = nil)
@@ -133,22 +133,37 @@ module Juggernaut
      end
 
      def give_up?
-       @connections.select {|em| em.logout_timeout and Time.now > em.logout_timeout }.any?
+       @connections.select {|em| 
+         em.logout_timeout and Time.now > em.logout_timeout 
+       }.any?
      end
 
    private
 
      def post_request(url, channels = [])
-       url = URI.parse(url)
+       uri = URI.parse(url)
+       uri.path = '/' if uri.path == ''
        params = []
        params << "client_id=#{id}" if id
        params << "session_id=#{session_id}" if session_id
        channels.each {|chan| params << "channels[]=#{chan}" }
-       url.query = params.join('&')
-       begin         
-         open(url.to_s, "User-Agent" => "Ruby/#{RUBY_VERSION}")
+       headers = {"User-Agent" => "Ruby/#{RUBY_VERSION}"}
+       begin
+         http = Net::HTTP.new(uri.host, uri.port)
+         if uri.scheme == 'https'
+           http.use_ssl = true
+           http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+         end
+         http.read_timeout = 5
+         resp, data = http.post(uri.path, params.join('&'), headers)
+         unless resp.is_a?(Net::HTTPOK)
+           return false
+         end
        rescue => e
-         logger.debug("Bad response from #{url.to_s}: #{e}")
+         logger.debug("Bad request #{url.to_s}: #{e}")
+         return false
+       rescue Timeout::Error
+         logger.debug("#{url.to_s} timeout")
          return false
        end
        true

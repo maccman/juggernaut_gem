@@ -70,7 +70,7 @@ module Juggernaut
       end
       
       EventMachine::run {
-        EventMachine::add_periodic_timer( options[:cleanup_timer].to_i ) { Juggernaut::Client.send_logouts_after_timeout }
+        EventMachine::add_periodic_timer( options[:cleanup_timer] || 2 ) { Juggernaut::Client.send_logouts_after_timeout }
         EventMachine::start_server(options[:host], options[:port].to_i, Juggernaut::Server)
         EM.set_effective_user( options[:user] ) if options[:user]
       }

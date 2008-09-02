@@ -78,9 +78,9 @@ module Juggernaut
        add_new_connection(subscriber)
      end
 
-     def to_s
+     def to_json
        {
-         :id => @id.to_s, 
+         :id => @id, 
          :session_id => @session_id
        }.to_json
      end

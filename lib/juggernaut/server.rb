@@ -262,17 +262,17 @@ module Juggernaut
               client = Juggernaut::Client.find_by_id(client_id)
               client.remove_channels!(@request[:channels]) if client
             end
-          when :show_users
+          when :show_clients
             if @request[:client_ids] and @request[:client_ids].any?
               clients = @request[:client_ids].collect{ |client_id| Client.find_by_id(client_id) }.compact.uniq
             else
               clients = Juggernaut::Client.find_all
             end
             publish clients.to_json
-          when :show_user
+          when :show_client
             query_needs :client_id
             publish Juggernaut::Client.find_by_id(@request[:client_id]).to_json
-          when :show_users_for_channel
+          when :show_clients_for_channels
             query_needs :channels
             publish Juggernaut::Client.find_by_channels(@request[:channels]).to_json
         else

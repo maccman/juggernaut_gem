@@ -207,9 +207,9 @@ module Juggernaut
       client = Juggernaut::Client.find_by_signature(signature)
       return if !client
       msg_id = Integer(msg_id)
-      return if msg_id >= client.current_msg_id
+      return if msg_id >= client.connections.select {|c| c == self }.current_msg_id
       client.messages.select {|msg| 
-        (msg_id..client.current_msg_id).include?(msg.id)
+        (msg_id..client.connections.select {|c| c == self }).include?(msg.id)
       }.each {|msg| publish(msg) }
     end
     

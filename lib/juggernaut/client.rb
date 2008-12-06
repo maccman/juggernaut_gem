@@ -6,10 +6,11 @@ module Juggernaut
   class Client
     include Juggernaut::Miscel
 
+    @@clients = [ ]
+
     attr_reader   :id
     attr_accessor :session_id
     attr_reader   :connections
-    @@clients = []
 
     class << self
       # Actually does a find_or_create_by_id
@@ -21,10 +22,6 @@ module Juggernaut
         else
           self.new(subscriber, request)
         end
-      end
-
-      def add_client(client)
-        @@clients << client unless @@clients.include?(client)
       end
 
       # Client find methods
@@ -63,7 +60,6 @@ module Juggernaut
         @@clients.each do |client|
           if !client.alive? and client.give_up?
             client.logout_request
-            @@clients.delete(client)
           end
         end
       end
@@ -74,12 +70,25 @@ module Juggernaut
           client.logout_request
         end
       end
+
+      def register_client(client)
+        @@clients << client unless @@clients.include?(client)
+      end
+
+      def client_registered?(client)
+        @@clients.include?(client)
+      end
+
+      def unregister_client(client)
+        @@clients.delete(client)
+      end
     end
 
     def initialize(subscriber, request)
       @connections = []
       @id         = request[:client_id]
       @session_id = request[:session_id]
+      self.register
       add_new_connection(subscriber)
     end
 
@@ -105,6 +114,7 @@ module Juggernaut
     end
 
     def logout_request
+      self.unregister
       return true unless options[:logout_url]
       post_request(options[:logout_url])
     end
@@ -138,7 +148,19 @@ module Juggernaut
       end.any?
     end
 
-  private
+  protected
+
+    def register
+      self.class.register_client(self)
+    end
+
+    def registered?
+      self.class.client_registered?(self)
+    end
+
+    def unregister
+      self.class.unregister_client(self)
+    end
 
     def post_request(url, channels = [])
       uri = URI.parse(url)

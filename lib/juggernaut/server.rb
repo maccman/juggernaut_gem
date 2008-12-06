@@ -135,8 +135,11 @@ module Juggernaut
     end
     
     def unbind
-      @client.logout_connection_request(@channels) if @client # todo - should be called after timeout?
-      logger.debug "Lost client: #{@client.id}" if @client
+      if @client
+        # todo - should be called after timeout?
+        @client.logout_connection_request(@channels)
+        logger.debug "Lost client: #{@client.id}"
+      end
       mark_dead('Unbind called')
     end
     
@@ -289,8 +292,6 @@ module Juggernaut
         if !@client.subscription_request(@channels)
           raise UnauthorisedSubscription, @client
         end
-        
-        Juggernaut::Client.add_client(@client)
         
         if options[:store_messages]
           broadcast_all_messages_from(@request[:last_msg_id], @request[:signature])

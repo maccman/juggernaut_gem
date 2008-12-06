@@ -128,6 +128,11 @@ module Juggernaut
       post_request(options[:logout_url])
     end
 
+    def remove_connection(connection)
+      @connections.delete(connection)
+      self.unregister if @connections.empty?
+    end
+
     def send_message(msg, channels = nil)
       @connections.each do |em|
         em.broadcast(msg) if !channels or channels.empty? or em.has_channels?(channels)

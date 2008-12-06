@@ -95,6 +95,7 @@ module Juggernaut
     def to_json
       {
         :client_id  => @id, 
+        :num_connections => @connections.size,
         :session_id => @session_id
       }.to_json
     end

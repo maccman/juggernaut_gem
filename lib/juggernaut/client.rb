@@ -104,6 +104,14 @@ module Juggernaut
       @connections << subscriber
     end
 
+    def friendly_id
+      if self.id
+        "with ID #{self.id}"
+      else
+        "session #{self.session_id}"
+      end
+    end
+
     def subscription_request(channels)
       return true unless options[:subscription_url]
       post_request(options[:subscription_url], channels)

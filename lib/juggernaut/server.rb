@@ -138,7 +138,7 @@ module Juggernaut
       if @client
         # todo - should be called after timeout?
         @client.logout_connection_request(@channels)
-        logger.debug "Lost client: #{@client.id}"
+        logger.debug "Lost client #{@client.friendly_id}"
       end
       mark_dead('Unbind called')
     end
@@ -147,7 +147,7 @@ module Juggernaut
     # never throws an exception
     def publish(msg)
       logger.debug "Sending msg: #{msg.to_s}"
-      logger.debug "To client: #{@client.id}" if @client
+      logger.debug "To client #{@client.friendly_id}" if @client
       send_data(msg.to_s + CR)
     end
     

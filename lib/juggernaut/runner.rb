@@ -52,7 +52,7 @@ module Juggernaut
     end
     
     def start
-      puts "Starting Juggernaut server on port: #{options[:port]}..."
+      puts "Starting Juggernaut server #{Juggernaut::VERSION} on port: #{options[:port]}..."
       
       trap("INT") {
         stop

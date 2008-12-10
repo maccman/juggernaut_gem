@@ -284,6 +284,8 @@ module Juggernaut
       end
     
       def subscribe_command
+        logger.debug "SUBSCRIBE: #{@request.inspect}"
+        
         if channels = @request[:channels]
           add_channels(channels)
         end

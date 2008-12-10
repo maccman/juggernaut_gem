@@ -57,6 +57,7 @@ module Juggernaut
     
     def post_init
       logger.debug "New client [#{client_ip}]"
+      @client         = nil
       @channels       = []
       @messages       = []
       @current_msg_id = 0
@@ -282,7 +283,7 @@ module Juggernaut
         end
       end
     
-      def subscribe_command        
+      def subscribe_command
         if channels = @request[:channels]
           add_channels(channels)
         end

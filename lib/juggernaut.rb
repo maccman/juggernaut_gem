@@ -131,6 +131,10 @@ module Juggernaut
         @@logger = Logger.new(STDOUT)
       end
     
+      def logger=(logger)
+        @@logger = logger
+      end
+    
       def log_path
         options[:log_path] || File.join(%w( / var run juggernaut.log ))
       end

@@ -7,12 +7,12 @@ module Juggernaut
     include Juggernaut::Miscel
     
     class << self
-      def run
-        self.new
+      def run(argv = ARGV)
+        self.new(argv)
       end
     end
     
-    def initialize
+    def initialize(argv = ARGV)
       self.options = {
         :host => "0.0.0.0",
         :port => 5001,
@@ -28,7 +28,7 @@ module Juggernaut
         :config_path => config_path
       })
       
-      parse_options
+      parse_options(argv)
       
       if !File.exists?(config_path)
         puts "You must generate a config file (juggernaut -g filename.yml)"
@@ -82,7 +82,7 @@ module Juggernaut
       EventMachine::stop
     end
     
-    def parse_options
+    def parse_options(argv)
       OptionParser.new do |opts|
         opts.summary_width = 25
         opts.banner = "Juggernaut (#{VERSION})\n\n",
@@ -162,7 +162,7 @@ module Juggernaut
           puts "Juggernaut #{VERSION}"
           exit
         end
-      end.parse!
+      end.parse!(argv)
       options
     end
     

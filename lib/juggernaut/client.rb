@@ -114,18 +114,18 @@ module Juggernaut
 
     def subscription_request(channels)
       return true unless options[:subscription_url]
-      post_request(options[:subscription_url], channels)
+      post_request(options[:subscription_url], channels, :timeout => options[:post_request_timeout] || 5)
     end
 
     def logout_connection_request(channels)
       return true unless options[:logout_connection_url]
-      post_request(options[:logout_connection_url], channels)
+      post_request(options[:logout_connection_url], channels, :timeout => options[:post_request_timeout] || 5)
     end
 
     def logout_request
       self.unregister
       return true unless options[:logout_url]
-      post_request(options[:logout_url])
+      post_request(options[:logout_url], [ ], :timeout => options[:post_request_timeout] || 5)
     end
 
     def remove_connection(connection)
@@ -176,7 +176,7 @@ module Juggernaut
       self.class.unregister_client(self)
     end
 
-    def post_request(url, channels = [])
+    def post_request(url, channels = [ ], options = { })
       uri = URI.parse(url)
       uri.path = '/' if uri.path == ''
       params = []
@@ -190,19 +190,16 @@ module Juggernaut
           http.use_ssl = true
           http.verify_mode = OpenSSL::SSL::VERIFY_NONE
         end
-        http.read_timeout = 5
+        http.read_timeout = options[:timeout] || 5
         resp, data = http.post(uri.path, params.join('&'), headers)
-        unless resp.is_a?(Net::HTTPOK)
-          return false
-        end
+        return resp.is_a?(Net::HTTPOK)
       rescue => e
-        logger.debug("Bad request #{url.to_s}: #{e}")
+        logger.error("Bad request #{url.to_s} (#{e.class}: #{e.message})")
         return false
       rescue Timeout::Error
-        logger.debug("#{url.to_s} timeout")
+        logger.error("#{url.to_s} timeout")
         return false
       end
-      true
     end   
 
   end

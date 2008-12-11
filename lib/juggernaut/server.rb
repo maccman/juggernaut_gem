@@ -147,8 +147,7 @@ module Juggernaut
     # As far as I'm aware, send_data
     # never throws an exception
     def publish(msg)
-      logger.debug "Sending msg: #{msg.to_s}"
-      logger.debug "To client #{@client.friendly_id}" if @client
+      logger.debug "Sending msg: #{msg.to_s} to client #{@request[:client_id]} (session #{@request[:session_id]})"
       send_data(msg.to_s + CR)
     end
     

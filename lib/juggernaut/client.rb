@@ -71,6 +71,10 @@ module Juggernaut
         end
       end
 
+      def reset!
+        @@clients.clear
+      end
+
       def register_client(client)
         @@clients << client unless @@clients.include?(client)
       end

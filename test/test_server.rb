@@ -90,16 +90,19 @@ class TestServer < Test::Unit::TestCase
       self.transmit :command => :subscribe, :channels => channels
       self
     end
-    def transmit(hash, wait_response = false)
-      hash[:client_id] ||= @client_id
-      hash[:session_id] ||= @session_id
-      @socket.print(hash.to_json + "\0")
+    def send_raw(raw, wait_response = false)
+      @socket.print(raw + "\0")
       @socket.flush
       if wait_response
         self.receive
       else
         nil
       end
+    end
+    def transmit(hash, wait_response = false)
+      hash[:client_id] ||= @client_id
+      hash[:session_id] ||= @session_id
+      self.send_raw(hash.to_json, wait_response)
     end
   end
   
@@ -155,7 +158,7 @@ class TestServer < Test::Unit::TestCase
   
   def assert_server_disconnected(subscriber)
     assert_not_nil subscriber
-    assert_raise(Errno::ECONNRESET) { subscriber.receive }
+    assert_raise(Errno::ECONNRESET, EOFError) { subscriber.receive }
   end
   
   # Convenience method to create a new DirectClient instance with overridable options.
@@ -437,12 +440,40 @@ class TestServer < Test::Unit::TestCase
       
     end
     
-    context "invalid command" do
+    context "upon processing an invalid command" do
       
       should "disconnect immediately" do
         subscriber = nil
         with_server do
           subscriber = self.new_client(:client_id => "pinocchio") { |c| c.transmit :command => :some_undefined_command; c.subscribe %w(); c }
+        end
+        assert_server_disconnected subscriber
+      end
+      
+    end
+    
+    %w(broadcast subscribe query).each do |type|
+      
+      context "upon receiving malformed #{type}" do
+        
+        should "disconnect immediately" do
+          subscriber = nil
+          with_server do
+            subscriber = self.new_client(:client_id => "pinocchio") { |c| c.transmit :command => type, :type => :unknown; c.subscribe %w(); c }
+          end
+          assert_server_disconnected subscriber
+        end
+        
+      end
+      
+    end
+    
+    context "upon receiving invalid JSON" do
+      
+      should "disconnect immediately" do
+        subscriber = nil
+        with_server do
+          subscriber = self.new_client(:client_id => "pinocchio") { |c| c.send_raw "invalid json..."; c }
         end
         assert_server_disconnected subscriber
       end

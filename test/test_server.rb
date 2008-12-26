@@ -93,21 +93,17 @@ class TestServer < Test::Unit::TestCase
   
   # Assert that the DirectClient has an awaiting message with +body+.
   def assert_body(body, subscriber)
-    assert_not_nil subscriber
-    result = subscriber.receive
-    assert_respond_to result, :[]
-    assert_equal body, result["body"]
-  ensure
-    subscriber.close
+    assert_response subscriber do |result|
+      assert_respond_to result, :[]
+      assert_equal body, result["body"]
+    end
   end
   
   # Assert that the DirectClient has no awaiting message.
   def assert_no_body(subscriber)
-    assert_not_nil subscriber
-    result = subscriber.receive
-    assert_equal false, result
-  ensure
-    subscriber.close
+    assert_response subscriber do |result|
+      assert_equal false, result
+    end
   end
   
   def assert_no_response(subscriber)
@@ -117,10 +113,24 @@ class TestServer < Test::Unit::TestCase
     subscriber.close
   end
   
-  def assert_response(subscriber, response = nil)
+  def assert_raw_response(subscriber, response = nil)
     assert_not_nil subscriber
     result = nil
     assert_nothing_raised { result = subscriber.receive(false) }
+    assert_not_nil result
+    if block_given?
+      yield result
+    else
+      assert_equal response, result
+    end
+  ensure
+    subscriber.close
+  end
+  
+  def assert_response(subscriber, response = nil)
+    assert_not_nil subscriber
+    result = nil
+    assert_nothing_raised { result = subscriber.receive }
     assert_not_nil result
     if block_given?
       yield result
@@ -417,7 +427,7 @@ class TestServer < Test::Unit::TestCase
         with_server do
           subscriber = self.new_client(:client_id => "pinocchio") { |c| c.request_crossdomain_file }
         end
-        assert_response subscriber, <<-EOF
+        assert_raw_response subscriber, <<-EOF
       <cross-domain-policy>
         <allow-access-from domain="*" to-ports="#{OPTIONS[:port]}" />
       </cross-domain-policy>

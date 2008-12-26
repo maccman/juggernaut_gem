@@ -41,6 +41,10 @@ class TestServer < Test::Unit::TestCase
     def inspect
       {:channels => @channels, :client_id => @client_id, :session_id => @session_id}.inspect
     end
+    def request_crossdomain_file
+      @socket.print "<policy-file-request/>\0"
+      self
+    end
     def query_show_client(client_id)
       self.transmit :command => :query, :type => :show_client, :client_id => client_id
       self
@@ -49,7 +53,7 @@ class TestServer < Test::Unit::TestCase
       self.transmit :command => :query, :type => :show_clients, :client_ids => client_ids
       self
     end
-    def receive
+    def receive(as_json = true)
       return nil unless @socket
       begin
         # response = @socket.read.to_s
@@ -61,7 +65,7 @@ class TestServer < Test::Unit::TestCase
         end
         response.chomp!("\0")
         Juggernaut.logger.info "DirectClient read: " + response.inspect
-        JSON.parse(response)
+        as_json ? JSON.parse(response) : response
       rescue => e
         Juggernaut.logger.error "DirectClient #{e.class}: #{e.message}"
         raise
@@ -109,6 +113,20 @@ class TestServer < Test::Unit::TestCase
   def assert_no_response(subscriber)
     assert_not_nil subscriber
     assert_raise(EOFError) { subscriber.receive }
+  ensure
+    subscriber.close
+  end
+  
+  def assert_response(subscriber, response = nil)
+    assert_not_nil subscriber
+    result = nil
+    assert_nothing_raised { result = subscriber.receive(false) }
+    assert_not_nil result
+    if block_given?
+      yield result
+    else
+      assert_equal response, result
+    end
   ensure
     subscriber.close
   end
@@ -388,6 +406,22 @@ class TestServer < Test::Unit::TestCase
           subscriber = self.new_client(:client_id => "pinocchio") { |c| c.transmit :command => :some_undefined_command; c.subscribe %w(); c }
         end
         assert_server_disconnected subscriber
+      end
+      
+    end
+    
+    context "crossdomain file request" do
+      
+      should "return contents of crossdomain file" do
+        subscriber = nil
+        with_server do
+          subscriber = self.new_client(:client_id => "pinocchio") { |c| c.request_crossdomain_file }
+        end
+        assert_response subscriber, <<-EOF
+      <cross-domain-policy>
+        <allow-access-from domain="*" to-ports="#{OPTIONS[:port]}" />
+      </cross-domain-policy>
+    EOF
       end
       
     end

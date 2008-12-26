@@ -64,7 +64,7 @@ class TestServer < Test::Unit::TestCase
         JSON.parse(response)
       rescue => e
         Juggernaut.logger.error "DirectClient #{e.class}: #{e.message}"
-        return false
+        raise
       end
     end
     def subscribe(channels)
@@ -99,7 +99,23 @@ class TestServer < Test::Unit::TestCase
   
   # Assert that the DirectClient has no awaiting message.
   def assert_no_body(subscriber)
-    assert_equal false, subscriber
+    assert_not_nil subscriber
+    result = subscriber.receive
+    assert_equal false, result
+  ensure
+    subscriber.close
+  end
+  
+  def assert_no_response(subscriber)
+    assert_not_nil subscriber
+    assert_raise(EOFError) { subscriber.receive }
+  ensure
+    subscriber.close
+  end
+  
+  def assert_server_disconnected(subscriber)
+    assert_not_nil subscriber
+    assert_raise(Errno::ECONNRESET) { subscriber.receive }
   end
   
   # Convenience method to create a new DirectClient instance with overridable options.
@@ -200,10 +216,7 @@ class TestServer < Test::Unit::TestCase
           subscriber = self.new_client(:client_id => "broadcast_channel") { |c| c.subscribe %w() }
           self.new_client { |c| c.broadcast_to_channels %w(master), body }
         end
-        assert_not_nil subscriber
-        result = subscriber.receive
-        subscriber.close
-        assert_equal false, result
+        assert_no_response subscriber
       end
       
       should "not be received by client in a different channel" do
@@ -212,10 +225,7 @@ class TestServer < Test::Unit::TestCase
           subscriber = self.new_client(:client_id => "broadcast_test") { |c| c.subscribe %w(slave) }
           self.new_client { |c| c.broadcast_to_channels %w(broadcast_channel), body }
         end
-        assert_not_nil subscriber
-        result = subscriber.receive
-        subscriber.close
-        assert_equal false, result
+        assert_no_response subscriber
       end
       
     end
@@ -254,6 +264,25 @@ class TestServer < Test::Unit::TestCase
         with_server do
           subscriber = self.new_client(:client_id => "broadcast_client") { |c| c.subscribe %w() }
           self.new_client { |c| c.broadcast_to_clients %w(broadcast_client), body }
+        end
+        assert_body body, subscriber
+      end
+      
+      should "not be received by other clients" do
+        subscriber = nil
+        with_server do
+          subscriber = self.new_client(:client_id => "broadcast_faker") { |c| c.subscribe %w() }
+          self.new_client { |c| c.broadcast_to_clients %w(broadcast_client), body }
+        end
+        assert_no_response subscriber
+      end
+      
+      should "be saved until the client reconnects" do
+        subscriber = nil
+        with_server :store_messages => true do
+          self.new_client(:client_id => "broadcast_client") { |c| c.subscribe %w() }.close
+          self.new_client { |c| c.broadcast_to_clients %w(broadcast_client), body }
+          subscriber = self.new_client(:client_id => "broadcast_client") { |c| c.subscribe %w() }
         end
         assert_body body, subscriber
       end
@@ -347,6 +376,18 @@ class TestServer < Test::Unit::TestCase
         assert_not_nil r2
         assert_equal 1, r2.size
         assert_equal r1, r2.first
+      end
+      
+    end
+    
+    context "invalid command" do
+      
+      should "disconnect immediately" do
+        subscriber = nil
+        with_server do
+          subscriber = self.new_client(:client_id => "pinocchio") { |c| c.transmit :command => :some_undefined_command; c.subscribe %w(); c }
+        end
+        assert_server_disconnected subscriber
       end
       
     end

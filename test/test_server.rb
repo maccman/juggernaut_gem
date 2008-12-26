@@ -61,6 +61,10 @@ class TestServer < Test::Unit::TestCase
       self.transmit :command => :query, :type => :show_clients, :client_ids => client_ids
       self
     end
+    def query_show_clients_for_channels(channels)
+      self.transmit :command => :query, :type => :show_clients_for_channels, :channels => channels
+      self
+    end
     def receive(as_json = true)
       return nil unless @socket
       begin
@@ -412,6 +416,23 @@ class TestServer < Test::Unit::TestCase
         assert_not_nil r2
         assert_equal 1, r2.size
         assert_equal r1, r2.first
+      end
+      
+      should "only return clients in specific channels" do
+        subscriber = nil
+        with_server do
+          self.new_client(:client_id => "alexa") { |c| c.subscribe %w(master slave zoo) }
+          self.new_client(:client_id => "bobby") { |c| c.subscribe %w(master slave) }
+          self.new_client(:client_id => "cindy") { |c| c.subscribe %w(master zoo) }
+          self.new_client(:client_id => "dixon") { |c| c.subscribe %w(slave zoo) }
+          self.new_client(:client_id => "eamon") { |c| c.subscribe %w(slave) }
+          self.new_client(:client_id => "flack") { |c| c.subscribe %w(decoy slave) }
+          subscriber = self.new_client(:client_id => "geoff") { |c| c.subscribe %w(zoo); c.query_show_clients_for_channels %w(master zoo) }
+        end
+        assert_response subscriber do |result|
+          assert_equal 5, result.size
+          assert_same_elements %w(alexa bobby cindy dixon geoff), result.collect { |r| r["client_id"] }
+        end
       end
       
     end

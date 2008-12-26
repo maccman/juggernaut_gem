@@ -45,6 +45,14 @@ class TestServer < Test::Unit::TestCase
       @socket.print "<policy-file-request/>\0"
       self
     end
+    def query_remove_channels_from_all_clients(channels)
+      self.transmit :command => :query, :type => :remove_channels_from_all_clients, :channels => channels
+      self
+    end
+    def query_remove_channels_from_client(channels, clients)
+      self.transmit :command => :query, :type => :remove_channels_from_client, :client_ids => clients, :channels => channels
+      self
+    end
     def query_show_client(client_id)
       self.transmit :command => :query, :type => :show_client, :client_id => client_id
       self
@@ -330,7 +338,7 @@ class TestServer < Test::Unit::TestCase
         result = subscriber.receive
         assert_not_nil result
         assert_equal 3, result.size
-        assert_equal %w(alex bob cindy), result.collect { |r| r["client_id"] }
+        assert_same_elements %w(alex bob cindy), result.collect { |r| r["client_id"] }
       end
       
       should "not include disconnected clients" do
@@ -344,7 +352,7 @@ class TestServer < Test::Unit::TestCase
         result = subscriber.receive
         assert_not_nil result
         assert_equal 2, result.size
-        assert_equal %w(sandra vivian), result.collect { |r| r["client_id"] }
+        assert_same_elements %w(sandra vivian), result.collect { |r| r["client_id"] }
       end
       
       should "only return requested clients" do
@@ -359,7 +367,7 @@ class TestServer < Test::Unit::TestCase
         result = subscriber.receive
         assert_not_nil result
         assert_equal 2, result.size
-        assert_equal %w(dixie fanny), result.collect { |r| r["client_id"] }
+        assert_same_elements %w(dixie fanny), result.collect { |r| r["client_id"] }
       end
       
       should "never return non-existant clients even when requested" do
@@ -432,6 +440,37 @@ class TestServer < Test::Unit::TestCase
         <allow-access-from domain="*" to-ports="#{OPTIONS[:port]}" />
       </cross-domain-policy>
     EOF
+      end
+      
+    end
+    
+    context "remove channel request" do
+      
+      should "work on all clients when requested" do
+        with_server do
+          self.new_client(:client_id => "homer") { |c| c.subscribe %w(groupie master slave1 slave2) }
+          self.new_client(:client_id => "marge") { |c| c.subscribe %w(master slave1 slave2) }
+          self.new_client(:client_id => "pinocchio") { |c|
+            c.subscribe %w(master slave1 slave2)
+            c.query_remove_channels_from_all_clients %w(slave1 slave2)
+          }
+        end
+        @connections.each do |connection|
+          assert_does_not_contain connection.channels, /slave/
+        end
+      end
+      
+      should "work on specific clients when requested" do
+        with_server do
+          self.new_client(:client_id => "homer") { |c| c.subscribe %w(groupie master slave1 slave2) }
+          self.new_client(:client_id => "marge") { |c| c.subscribe %w(master slave1 slave2) }
+          self.new_client(:client_id => "pinocchio") { |c|
+            c.subscribe %w(master slave1 slave2)
+            c.query_remove_channels_from_client %w(slave1 slave2), %w(homer)
+          }
+        end
+        assert_does_not_contain @connections.find { |c| c.instance_eval("@request[:client_id]") == "homer" }.channels, /slave/
+        assert_contains @connections.find { |c| c.instance_eval("@request[:client_id]") == "marge" }.channels, /slave/
       end
       
     end

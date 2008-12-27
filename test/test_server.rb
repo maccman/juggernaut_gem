@@ -2,6 +2,7 @@
 $:.unshift "../lib"
 require "juggernaut"
 require "test/unit"
+require "shoulda"
 
 class TestServer < Test::Unit::TestCase
   

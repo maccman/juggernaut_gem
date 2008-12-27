@@ -123,6 +123,7 @@ module Juggernaut
         when :broadcast: broadcast_command
         when :subscribe: subscribe_command
         when :query:     query_command
+        when :noop:      noop_command
       else
         raise InvalidCommand, @request
       end
@@ -280,6 +281,10 @@ module Juggernaut
         else
           raise MalformedQuery, @request
         end
+      end
+    
+      def noop_command
+        logger.debug "NOOP"
       end
     
       def subscribe_command

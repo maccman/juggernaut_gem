@@ -137,7 +137,6 @@ module Juggernaut
 
     def remove_connection(connection)
       @connections.delete(connection)
-      # self.unregister if @connections.empty?
     end
 
     def send_message(msg, channels = nil)
@@ -163,12 +162,11 @@ module Juggernaut
       @connections.select { |em| em.alive? }.any?
     end
 
+    # This client is only dead if there are no connections and we are
+    # past the timeout (if we are within the timeout, the user could
+    # just be doing a page reload or going to a new page)
     def give_up?
       @connections.empty? and (logout_timeout ? (Time.now > logout_timeout) : true)
-
-#      @connections.select do |em| 
-#        em.logout_timeout and Time.now > em.logout_timeout 
-#      end.any?
     end
 
   protected

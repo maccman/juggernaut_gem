@@ -12,6 +12,8 @@ module Juggernaut
     attr_accessor :session_id
     attr_reader   :connections
 
+    attr_accessor :logout_timeout
+
     class << self
       # Actually does a find_or_create_by_id
       def find_or_create(subscriber, request)
@@ -127,6 +129,7 @@ module Juggernaut
     end
 
     def logout_request
+      logger.debug("Timed out client #{friendly_id}")
       self.unregister
       return true unless options[:logout_url]
       post_request(options[:logout_url], [ ], :timeout => options[:post_request_timeout] || 5)
@@ -134,7 +137,7 @@ module Juggernaut
 
     def remove_connection(connection)
       @connections.delete(connection)
-      self.unregister if @connections.empty?
+      # self.unregister if @connections.empty?
     end
 
     def send_message(msg, channels = nil)
@@ -161,9 +164,11 @@ module Juggernaut
     end
 
     def give_up?
-      @connections.select do |em| 
-        em.logout_timeout and Time.now > em.logout_timeout 
-      end.any?
+      @connections.empty? and (logout_timeout ? (Time.now > logout_timeout) : true)
+
+#      @connections.select do |em| 
+#        em.logout_timeout and Time.now > em.logout_timeout 
+#      end.any?
     end
 
   protected

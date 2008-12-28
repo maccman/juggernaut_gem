@@ -1,6 +1,6 @@
 Juggernaut
-    by Alex MacCaw
-    http://www.eribium.org
+    by Alex MacCaw http://www.eribium.org
+    minor fixes and unit tests by Ripta Pasay
 
 == DESCRIPTION:
 See Plugin README:

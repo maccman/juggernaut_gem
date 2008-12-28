@@ -1,0 +1,9 @@
+
+* Clients are currently not registered unless they explicitly subscribe, even if the channel list is empty.
+  Is this part of the spec?
+
+* Couldn't figure out how to test server with :store_message.
+
+* Might want to rename "Server" to something more accurate, like "Connection".
+
+* Various unit tests don't always pass; couldn't find any examples on testing EventMachines with multiple incoming connections.

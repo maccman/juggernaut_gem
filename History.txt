@@ -1,0 +1,8 @@
+
+=== 0.5.8
+
+* Add unit tests
+* Remove dead connections from the client, and unregister the client if no connections are active
+* Show session ID instead of client ID if client ID was never assigned
+* Include number of active connections in client JSON representation
+* Add gem spec file

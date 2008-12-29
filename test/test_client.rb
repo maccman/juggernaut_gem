@@ -152,6 +152,18 @@ class TestClient < Test::Unit::TestCase
       
     end
     
+    context "channel list" do
+      
+      should "be the unique list of all channels in the subscribers" do
+        @s1.stubs(:channels).returns(%w(master slave1))
+        @s2 = DummySubscriber.new
+        @s2.stubs(:channels).returns(%w(master slave2))
+        @client.add_new_connection(@s2)
+        assert_same_elements %w(master slave1 slave2), @client.channels
+      end
+      
+    end
+    
   end
   
 end

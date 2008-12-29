@@ -143,6 +143,10 @@ module Juggernaut
       end
     end
 
+    def channels
+      @connections.collect { |em| em.channels }.flatten.uniq
+    end
+
     def has_channels?(channels)
       @connections.each do |em|
         return true if em.has_channels?(channels)

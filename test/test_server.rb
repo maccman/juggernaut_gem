@@ -55,6 +55,10 @@ class TestServer < Test::Unit::TestCase
       self.transmit :command => :query, :type => :remove_channels_from_client, :client_ids => clients, :channels => channels
       self
     end
+    def query_show_channels_for_client(client_id)
+      self.transmit :command => :query, :type => :show_channels_for_client, :client_id => client_id
+      self
+    end
     def query_show_client(client_id)
       self.transmit :command => :query, :type => :show_client, :client_id => client_id
       self
@@ -494,6 +498,26 @@ class TestServer < Test::Unit::TestCase
         <allow-access-from domain="*" to-ports="#{OPTIONS[:port]}" />
       </cross-domain-policy>
     EOF
+      end
+      
+    end
+    
+    context "querying channel list" do
+      
+      should "return channel list" do
+        subscribe = nil
+        with_server do
+          self.new_client(:client_id => "homer") { |c| c.subscribe %w(groupie master slave1 slave2) }
+          self.new_client(:client_id => "marge") { |c| c.subscribe %w(master slave1 slave2) }
+          subscribe = self.new_client(:client_id => "pinocchio") { |c|
+            c.subscribe %w(master slave1)
+            c.query_show_channels_for_client "marge"
+          }
+        end
+        assert_response subscribe do |result|
+          assert_equal 3, result.size 
+          assert_same_elements %w(master slave1 slave2), result
+        end
       end
       
     end

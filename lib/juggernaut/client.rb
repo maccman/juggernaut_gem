@@ -94,6 +94,7 @@ module Juggernaut
       @connections = []
       @id         = request[:client_id]
       @session_id = request[:session_id]
+      @messages   = []
       self.register
       add_new_connection(subscriber)
     end
@@ -140,8 +141,25 @@ module Juggernaut
     end
 
     def send_message(msg, channels = nil)
-      @connections.each do |em|
-        em.broadcast(msg) if !channels or channels.empty? or em.has_channels?(channels)
+      store_message(msg, channels) if options[:store_messages]
+      send_message_to_connections(msg, channels)
+    end
+
+    # Send messages that are queued up for this particular client.
+    # Messages are only queued for previously-connected clients.
+    def send_queued_messages
+      self.expire_queued_messages!
+
+      # Weird looping because we don't want to send messages that get
+      # added to the array after we start iterating (since those will
+      # get sent to the client anyway).
+      @length = @messages.length
+
+      logger.debug("Sending #{@length} queued message(s) to client #{friendly_id}")
+
+      @length.times do |id|
+        message = @messages[id]
+        send_message_to_connections(message[:message], message[:channels])
       end
     end
 
@@ -173,7 +191,7 @@ module Juggernaut
       !alive? and (logout_timeout ? (Time.now > logout_timeout) : true)
     end
 
-  protected
+    protected
 
     def register
       self.class.register_client(self)
@@ -211,7 +229,25 @@ module Juggernaut
         logger.error("#{url.to_s} timeout")
         return false
       end
-    end   
+    end  
 
+    def send_message_to_connections(msg, channels)
+      @connections.each do |em|
+        em.broadcast(msg) if !channels or channels.empty? or em.has_channels?(channels)
+      end
+    end
+
+    # Queued messages are stored until a timeout is reached which is the
+    # same as the connection timeout. This takes care of messages that
+    # come in between page loads or ones that come in right when you are
+    # clicking off one page and loading the next one.
+    def store_message(msg, channels)
+      self.expire_queued_messages!
+      @messages << { :channels => channels, :message => msg, :timeout => Time.now + options[:timeout] }
+    end
+
+    def expire_queued_messages!
+      @messages.reject! { |message| Time.now > message[:timeout] }
+    end
   end
 end

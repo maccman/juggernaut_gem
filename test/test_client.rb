@@ -79,18 +79,22 @@ class TestClient < Test::Unit::TestCase
       @s2.stubs(:alive?).returns(false)
       assert_equal false, @client.alive?
     end
-    
-    should "give up if at least one subscriber is timed out" do
-      @s1.stubs(:logout_timeout).returns(Time.now + 5)
-      @s2 = DummySubscriber.new
-      @client.add_new_connection(@s2)
-      @s2.stubs(:logout_timeout).returns(Time.now - 1)
-      assert @client.give_up?
+
+    should "not give up if within the timeout period" do
+      @s1.stubs(:alive?).returns(false)
+      @client.stubs(:logout_timeout).returns(Time.now + 10)
+      assert_equal false, @client.give_up?
+    end
+
+    should "not give up if at least one subscriber is alive" do
+      @s1.stubs(:alive?).returns(true)
+      @client.stubs(:logout_timeout).returns(Time.now - 1)
+      assert_equal false, @client.give_up?
     end
     
     should "send logouts after timeout" do
       @s1.stubs(:alive?).returns(false)
-      @s1.stubs(:logout_timeout).returns(Time.now - 1)
+      @client.stubs(:logout_timeout).returns(Time.now - 1)
       @client.expects(:logout_request).once
       Juggernaut::Client.send_logouts_after_timeout
     end

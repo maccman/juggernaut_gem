@@ -161,7 +161,7 @@ module Juggernaut
     end
 
     def alive?
-      @connections.select{|em| em.alive? }.any?
+      @connections.select { |em| em.alive? }.any?
     end
 
     def give_up?

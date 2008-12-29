@@ -166,8 +166,8 @@ module Juggernaut
       # usually dies through an unbind 
       @connected = false
       @logout_timeout = Time::now + (options[:timeout] || 5)
-			@status = "DEAD: %s: Could potentially logout at %s" % [ reason, @logout_timeout ]
-			@client.remove_connection(self) if @client
+      @status = "DEAD: %s: Could potentially logout at %s" % [ reason, @logout_timeout ]
+      @client.remove_connection(self) if @client
     end
     
     def alive?

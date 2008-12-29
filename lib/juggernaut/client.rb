@@ -170,7 +170,7 @@ module Juggernaut
     # past the timeout (if we are within the timeout, the user could
     # just be doing a page reload or going to a new page)
     def give_up?
-      @connections.empty? and (logout_timeout ? (Time.now > logout_timeout) : true)
+      !alive? and (logout_timeout ? (Time.now > logout_timeout) : true)
     end
 
   protected

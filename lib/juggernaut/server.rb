@@ -168,6 +168,8 @@ module Juggernaut
       @logout_timeout = Time::now + (options[:timeout] || 5)
       @status = "DEAD: %s: Could potentially logout at %s" % [ reason, @logout_timeout ]
       @client.remove_connection(self) if @client
+      
+      @client.logout_timeout = @logout_timeout if @client
     end
     
     def alive?

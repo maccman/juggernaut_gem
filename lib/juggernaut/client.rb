@@ -12,8 +12,6 @@ module Juggernaut
     attr_accessor :session_id
     attr_reader   :connections
 
-    attr_accessor :logout_timeout
-
     class << self
       # Actually does a find_or_create_by_id
       def find_or_create(subscriber, request)
@@ -60,7 +58,7 @@ module Juggernaut
 
       def send_logouts_after_timeout
         @@clients.each do |client|
-          if !client.alive? and client.give_up?
+          if client.give_up?
             client.logout_request
           end
         end
@@ -95,6 +93,7 @@ module Juggernaut
       @id         = request[:client_id]
       @session_id = request[:session_id]
       @messages   = []
+      @logout_timeout = 0
       self.register
       add_new_connection(subscriber)
     end
@@ -130,14 +129,16 @@ module Juggernaut
     end
 
     def logout_request
-      logger.debug("Timed out client #{friendly_id}")
       self.unregister
+      logger.debug("Timed out client #{friendly_id}")
       return true unless options[:logout_url]
       post_request(options[:logout_url], [ ], :timeout => options[:post_request_timeout] || 5)
     end
-
+    
     def remove_connection(connection)
       @connections.delete(connection)
+      self.reset_logout_timeout!
+      self.logout_request if self.give_up?
     end
 
     def send_message(msg, channels = nil)
@@ -188,7 +189,7 @@ module Juggernaut
     # past the timeout (if we are within the timeout, the user could
     # just be doing a page reload or going to a new page)
     def give_up?
-      !alive? and (logout_timeout ? (Time.now > logout_timeout) : true)
+      !alive? and (Time.now > @logout_timeout)
     end
 
     protected
@@ -248,6 +249,10 @@ module Juggernaut
 
     def expire_queued_messages!
       @messages.reject! { |message| Time.now > message[:timeout] }
+    end
+
+    def reset_logout_timeout!
+      @logout_timeout = Time.now + options[:timeout]
     end
   end
 end

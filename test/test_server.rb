@@ -359,7 +359,7 @@ class TestServer < Test::Unit::TestCase
       
       should "not include disconnected clients" do
         subscriber = nil
-        with_server do
+        with_server(:timeout => 0) do
           self.new_client(:client_id => "sandra") { |c| c.subscribe %w() }
           self.new_client(:client_id => "tom") { |c| c.subscribe %w() }.close
           subscriber = self.new_client(:client_id => "vivian") { |c| c.subscribe %w(); c.query_show_clients }

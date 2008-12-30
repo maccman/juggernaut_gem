@@ -81,20 +81,23 @@ class TestClient < Test::Unit::TestCase
     end
 
     should "not give up if within the timeout period" do
+      Juggernaut.options[:timeout] = 10
       @s1.stubs(:alive?).returns(false)
-      @client.stubs(:logout_timeout).returns(Time.now + 10)
+      @client.send(:reset_logout_timeout!)
       assert_equal false, @client.give_up?
     end
 
     should "not give up if at least one subscriber is alive" do
+      Juggernaut.options[:timeout] = 0
       @s1.stubs(:alive?).returns(true)
-      @client.stubs(:logout_timeout).returns(Time.now - 1)
+      @client.send(:reset_logout_timeout!)
       assert_equal false, @client.give_up?
     end
     
     should "send logouts after timeout" do
+      Juggernaut.options[:timeout] = 0
       @s1.stubs(:alive?).returns(false)
-      @client.stubs(:logout_timeout).returns(Time.now - 1)
+      @client.send(:reset_logout_timeout!)
       @client.expects(:logout_request).once
       Juggernaut::Client.send_logouts_after_timeout
     end

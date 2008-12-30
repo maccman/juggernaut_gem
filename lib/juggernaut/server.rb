@@ -59,7 +59,6 @@ module Juggernaut
       logger.debug "New client [#{client_ip}]"
       @client         = nil
       @channels       = []
-      @messages       = []
       @current_msg_id = 0
       @connected      = true
       @logout_timeout = nil
@@ -156,7 +155,6 @@ module Juggernaut
     
     def broadcast(bdy)
       msg = Juggernaut::Message.new(@current_msg_id += 1, bdy, self.signature)
-      @messages << msg if options[:store_messages]
       publish(msg)
     end
     
@@ -165,10 +163,8 @@ module Juggernaut
       # attempt would hook onto a new em instance. A client
       # usually dies through an unbind 
       @connected = false
-      @logout_timeout = Time::now + (options[:timeout] || 5)
-      @status = "DEAD: %s: Could potentially logout at %s" % [ reason, @logout_timeout ]
       @client.remove_connection(self) if @client
-      
+            
       @client.logout_timeout = @logout_timeout if @client
     end
     
@@ -205,25 +201,6 @@ module Juggernaut
     def remove_channels!(chan_names)
       chan_names.to_a.each do |chan_name|
         remove_channel!(chan_name)
-      end
-    end
-    
-    def broadcast_all_messages_from(msg_id, signature_id)
-      return unless msg_id or signature_id
-      client = Juggernaut::Client.find_by_signature(signature)
-      return if !client
-      msg_id = Integer(msg_id)
-      return if msg_id >= client.connections.select {|c| c == self }.current_msg_id
-      client.messages.select {|msg| 
-        (msg_id..client.connections.select {|c| c == self }).include?(msg.id)
-      }.each {|msg| publish(msg) }
-    end
-    
-    # todo - how should this be called - if at all?
-    def clean_up_old_messages(how_many_to_keep = 1000)
-      while @messages.length > how_many_to_keep
-        # We need to shift, as we want to remove the oldest first
-        @messages.shift
       end
     end
     
@@ -310,7 +287,7 @@ module Juggernaut
         end
         
         if options[:store_messages]
-          broadcast_all_messages_from(@request[:last_msg_id], @request[:signature])
+          @client.send_queued_messages
         end
       end
     

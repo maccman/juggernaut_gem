@@ -183,6 +183,9 @@ class TestServer < Test::Unit::TestCase
   # So ugly, but EventMachine doesn't have test examples on code that require back-and-forth
   # communication over a long-running connection.
   def with_server(options = { }, &block)
+    # We should not have any clients before we start
+    Juggernaut::Client.reset!
+
     # Save the current options. This is an obvious hack.
     old_options, Juggernaut.options = Juggernaut.options, OPTIONS.merge(options)
     Juggernaut.logger.level = Logger::DEBUG
@@ -356,7 +359,7 @@ class TestServer < Test::Unit::TestCase
       
       should "not include disconnected clients" do
         subscriber = nil
-        with_server do
+        with_server(:timeout => 0) do
           self.new_client(:client_id => "sandra") { |c| c.subscribe %w() }
           self.new_client(:client_id => "tom") { |c| c.subscribe %w() }.close
           subscriber = self.new_client(:client_id => "vivian") { |c| c.subscribe %w(); c.query_show_clients }

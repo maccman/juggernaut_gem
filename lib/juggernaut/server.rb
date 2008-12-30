@@ -164,8 +164,6 @@ module Juggernaut
       # usually dies through an unbind 
       @connected = false
       @client.remove_connection(self) if @client
-            
-      @client.logout_timeout = @logout_timeout if @client
     end
     
     def alive?

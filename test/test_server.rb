@@ -183,6 +183,9 @@ class TestServer < Test::Unit::TestCase
   # So ugly, but EventMachine doesn't have test examples on code that require back-and-forth
   # communication over a long-running connection.
   def with_server(options = { }, &block)
+    # We should not have any clients before we start
+    Juggernaut::Client.reset!
+
     # Save the current options. This is an obvious hack.
     old_options, Juggernaut.options = Juggernaut.options, OPTIONS.merge(options)
     Juggernaut.logger.level = Logger::DEBUG

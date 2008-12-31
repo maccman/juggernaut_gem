@@ -149,7 +149,7 @@ module Juggernaut
 
     # Send messages that are queued up for this particular client.
     # Messages are only queued for previously-connected clients.
-    def send_queued_messages
+    def send_queued_messages(connection)
       self.expire_queued_messages!
 
       # Weird looping because we don't want to send messages that get
@@ -161,7 +161,7 @@ module Juggernaut
 
       @length.times do |id|
         message = @messages[id]
-        send_message_to_connections(message[:message], message[:channels])
+        send_message_to_connection(connection, message[:message], message[:channels])
       end
     end
 
@@ -234,9 +234,13 @@ module Juggernaut
     end  
 
     def send_message_to_connections(msg, channels)
-      @connections.each do |em|
-        em.broadcast(msg) if !channels or channels.empty? or em.has_channels?(channels)
+      @connections.each do |connection|
+        send_message_to_connection(connection, msg, channels)
       end
+    end
+
+    def send_message_to_connection(connection, msg, channels)
+      connection.broadcast(msg) if !channels or channels.empty? or connection.has_channels?(channels)
     end
 
     # Queued messages are stored until a timeout is reached which is the

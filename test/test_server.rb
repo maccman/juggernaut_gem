@@ -338,6 +338,18 @@ class TestServer < Test::Unit::TestCase
         end
         assert_body body, subscriber
       end
+
+      should "only be sent to new client connection" do
+        old_subscriber = nil
+        new_subscriber = nil
+
+        with_server :store_messages => true, :timeout => 30 do 
+          old_subscriber = self.new_client(:client_id => "broadcast_client", :session_id => "1") { |c| c.subscribe %w() }
+          self.new_client { |c| c.broadcast_to_clients %w(broadcast_client), body }
+          @connections.first.client.expects(:send_message_to_connection).times(2)
+          new_subscriber = self.new_client(:client_id => "broadcast_client", :session_id => "2") { |c| c.subscribe %w() }
+        end
+      end
       
     end
     

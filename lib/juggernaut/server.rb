@@ -52,6 +52,7 @@ module Juggernaut
     attr_reader   :logout_timeout
     attr_reader   :status
     attr_reader   :channels
+    attr_reader   :client
 
     # EM methods
     
@@ -285,7 +286,7 @@ module Juggernaut
         end
         
         if options[:store_messages]
-          @client.send_queued_messages
+          @client.send_queued_messages(self)
         end
       end
     

@@ -358,7 +358,7 @@ module Juggernaut
       end
       
       def client_ip
-        Socket.unpack_sockaddr_in(get_peername)[1]
+        Socket.unpack_sockaddr_in(get_peername)[1] rescue nil
       end
   end
 end

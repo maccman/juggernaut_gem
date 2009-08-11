@@ -120,10 +120,14 @@ module Juggernaut
       end
       
       case @request[:command].to_sym
-        when :broadcast: broadcast_command
-        when :subscribe: subscribe_command
-        when :query:     query_command
-        when :noop:      noop_command
+        when :broadcast
+          broadcast_command
+        when :subscribe
+          subscribe_command
+        when :query
+          query_command
+        when :noop
+          noop_command
       else
         raise InvalidCommand, @request
       end

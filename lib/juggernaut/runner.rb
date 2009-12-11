@@ -1,6 +1,7 @@
 require 'optparse'
 require 'yaml'
 require 'erb'
+require 'resolv'
 
 module Juggernaut
   class Runner
@@ -39,6 +40,10 @@ module Juggernaut
       
       if options.include?(:kill)
         kill_pid(options[:kill] || '*')
+      end
+
+      if options[:allowed_ips]
+        options[:allowed_ips] = options[:allowed_ips].collect { |ip| Resolv.getaddress(ip) }
       end
       
       Process.euid = options[:user] if options[:user]

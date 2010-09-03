@@ -1,3 +1,8 @@
+Notice!
+
+This repo has now been deprecated - please see:
+http://github.com/maccman/juggernaut
+
 Juggernaut
     by Alex MacCaw http://www.eribium.org
     minor fixes and unit tests by Ripta Pasay

@@ -99,12 +99,16 @@ module Juggernaut
       add_new_connection(subscriber)
     end
 
-    def to_json
+    def to_hash 
       {
         :client_id  => @id, 
         :num_connections => @connections.size,
         :session_id => @session_id
-      }.to_json
+      }
+    end
+    
+    def to_json
+      to_hash.to_json
     end
 
     def add_new_connection(subscriber)

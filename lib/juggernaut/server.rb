@@ -260,7 +260,7 @@ module Juggernaut
             else
               clients = Juggernaut::Client.find_all
             end
-            publish clients.to_json
+            publish clients.map{|client| client.to_hash}.to_json
           when :show_client
             query_needs :client_id
             publish Juggernaut::Client.find_by_id(@request[:client_id]).to_json
